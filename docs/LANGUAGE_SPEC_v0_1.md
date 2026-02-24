@@ -1,27 +1,29 @@
-# Toy Language Specification v0.1
+# Codawy Language Specification v0.1
 
 ## 1. Overview
 
-This document defines version 0.1 of a custom programming language
-implemented in Python.
+Codawy v0.1 is a custom programming language implemented in Python.
 
-The goal of v0.1 is to create a small but complete language that supports:
+The goal of Codawy is to serve as an educational programming language designed to introduce children and beginners to core programming concepts in a structured and culturally adapted way.
 
-- Integer arithmetic
-- Variables
-- Conditional statements
-- Loops
+Codawy is designed to teach programming fundamentals clearly and progressively, particularly in an Egyptian educational context, using simplified Arabic-inspired keywords.
+
+Version 0.1 focuses on introducing the following core programming concepts:
+
+- Integer and floating-point arithmetic
+- Statically typed variables
+- Conditional statements (including nested conditionals)
+- Loops (including nested loops)
 - Functions
 - Basic printing
 
-This version focuses on clarity and simplicity. Advanced features like
-types, classes, arrays, and strings are intentionally excluded.
+Advanced features such as arrays, strings, boolean types, classes, and complex data structures are intentionally excluded in v0.1 to keep the language simple and focused.
 
 ---
 
 ## 2. Syntax Style
 
-The language follows a C-like syntax style.
+Codawy follows a C-like syntax structure.
 
 ### 2.1 Blocks
 
@@ -34,141 +36,337 @@ Blocks are defined using curly braces:
 }
 ```
 
+Braces are mandatory for control flow bodies.  
+Single-line bodies without `{}` are not allowed.
+
+---
+
 ### 2.2 Statement Termination
 
-Each statement must end with a semicolon `;`
+Each statement must end with a semicolon `;`.
 
 Example:
 
 ```
-let x = 5;
+rakm x = 5;
 x = x + 1;
 ```
 
+---
+
 ### 2.3 Comments
 
-Single-line comments:
+Single-line comment:
 
 ```
 // this is a comment
 ```
 
-Multi-line comments:
+Multi-line comment:
 
 ```
 /*
-   this is
-   a multi-line
+   multi-line
    comment
 */
 ```
-### 3.1 Data Types
-- **Integer** only (signed).
-- No floats, strings, arrays, or booleans in v0.1.
-  - Conditions use integers: `0` = false, non-zero = true.
-  ## 4. Program Structure and Scope
+
+---
+
+## 3. Data Types
+
+Codawy v0.1 supports two numeric types.
+
+### 3.1 rakm (Integer)
+
+Represents signed integers.
+
+Example:
+
+```
+rakm x = 5;
+```
+
+---
+
+### 3.2 kasr (Float)
+
+Represents floating-point numbers.
+
+Example:
+
+```
+kasr y = 7.3;
+```
+
+---
+
+### 3.3 Type System Rules
+
+- Variables are statically typed.
+- Type is fixed at declaration.
+- Redeclaring a variable in the same scope is an error.
+- Assigning to an undeclared variable is an error.
+
+---
+
+### 3.4 Implicit Conversions
+
+Codawy allows implicit conversions:
+
+- `rakm → kasr` (integer to float) is allowed.
+- `kasr → rakm` (float to integer) is allowed.
+
+Float-to-integer conversion:
+
+- Always truncates toward zero.
+- `7.7 → 7`
+- `-7.7 → -7`
+
+Truncation happens automatically wherever a `rakm` is expected.
+
+---
+
+### 3.5 Boolean Semantics
+
+Codawy does not have a boolean type.
+
+Instead:
+
+- `1` represents true.
+- `0` represents false.
+- Any value other than `1` or `0` inside a condition is an error.
+
+Valid:
+
+```
+lw (1) { ... }
+```
+
+Error:
+
+```
+lw (3) { ... }
+```
+
+---
+
+## 4. Program Structure and Scope
 
 ### 4.1 Program Structure
-A program is a sequence of:
-- Function definitions (`func ... { ... }`)
-- Top-level statements (e.g., `let x = 5; print(x);`)
+
+A program consists of:
+
+- Function definitions
+- Top-level statements
 
 Top-level statements execute in order from top to bottom.
 
-### 4.2 Scopes
-Scopes are created by:
-- The top-level program (global scope)
-- Each function body
-- Each block `{ ... }` inside `if` / `while`
+---
 
-### 4.3 Name Resolution
-When referencing a variable name:
-- The compiler searches the current scope first.
-- If not found, it searches outward scope-by-scope.
-- If not found anywhere: **error**.
+### 4.2 Function Declaration
 
-### 4.4 Variable Declaration Rules
-- `let x = expr;` declares a **new** variable in the current scope.
-- Declaring the same name twice in the same scope is an **error**.
-- Assigning to an undeclared variable is an **error**.
+Functions are declared using the keyword `ya`.
 
 Example:
+
 ```
-let x = 1;
-{
-    let x = 2;  // allowed (new inner scope)
-    print(x);   // prints 2
+ya add(rakm a, rakm b) {
+    rakm result = a + b;
+    return result;
 }
-print(x);       // prints 1
 ```
-## 5. Operator Precedence and Associativity
 
-Expressions follow standard precedence rules.
+---
 
-From highest to lowest precedence:
+### 4.3 Scopes
 
-1. Parentheses: `(expr)`
-2. Multiplication / Division: `* /`
-3. Addition / Subtraction: `+ -`
-4. Comparisons: `== != < > <= >=`
+Scopes are created by:
 
-### 5.1 Associativity
-- `* / + -` are **left-associative**:
-  - `10 - 3 - 2` is `(10 - 3) - 2`
-- Comparisons are **not chainable** in v0.1:
-  - `1 < x < 3` is **not allowed**
-  - You must write: `(1 < x) == 1 && (x < 3) == 1` (note: `&&` not supported in v0.1)
-  - So for v0.1, do comparisons one at a time.
+- The global program
+- Each function body
+- Each block `{ ... }`
 
-### 5.2 Examples
+Variable lookup follows lexical scoping:
+
+- Search current scope first
+- Then outer scope
+- If not found → error
+
+---
+
+### 4.4 Variable Declaration Rules
+
+Examples:
+
 ```
-let a = 2 + 3 * 4;       // 2 + (3*4) = 14
-let b = (2 + 3) * 4;     // 20
-let c = 10 - 3 - 2;      // (10-3)-2 = 5
+rakm x = 5;
+kasr y = 3.2;
 ```
-## 6. Keywords and Tokens (Lexer Contract)
-
-### 6.1 Keywords
-The following words are reserved and cannot be used as identifiers:
-
-- `let`
-- `func`
-- `if`
-- `else`
-- `while`
-- `return`
-
-### 6.2 Operators
-Arithmetic:
-- `+` `-` `*` `/`
-
-Assignment:
-- `=`
-
-Comparisons:
-- `==` `!=` `<` `>` `<=` `>=`
-
-### 6.3 Punctuation
-- `(` `)` for grouping and function calls
-- `{` `}` for blocks
-- `,` for separating function parameters/arguments
-- `;` for ending statements
-
-### 6.4 Identifiers
-Identifiers are names for variables and functions.
 
 Rules:
-- Start with a letter or underscore: `[A-Za-z_]`
-- Followed by letters, digits, or underscores: `[A-Za-z0-9_]*`
-- Examples: `x`, `_temp`, `add2`, `my_var`
 
-### 6.5 Integer Literals
-Integers are sequences of digits:
-- Examples: `0`, `7`, `42`, `123456`
+- Type remains fixed after declaration.
+- Assignments must respect type rules and implicit conversions.
 
-### 6.6 Whitespace
-Spaces, tabs, and newlines are ignored except as separators between tokens.
+---
 
-### 6.7 Comments
-- Single-line comment starts with `//` and ends at newline
-- Multi-line comment starts with `/*` and ends with `*/`
+## 5. Control Flow
+
+### 5.1 If Statement
+
+Keyword: `lw`
+
+```
+lw (condition) {
+    ...
+}
+```
+
+---
+
+### 5.2 Else If
+
+Keyword sequence: `tb lw`
+
+```
+lw (condition1) {
+    ...
+}
+tb lw (condition2) {
+    ...
+}
+aw {
+    ...
+}
+```
+
+---
+
+### 5.3 Else
+
+Keyword: `aw`
+
+---
+
+### 5.4 While Loop
+
+Keyword sequence: `tol lma`
+
+Only while loops are supported in v0.1.
+
+```
+tol lma (condition) {
+    ...
+}
+```
+
+---
+
+## 6. Expressions and Operators
+
+### 6.1 Arithmetic Operators
+
+- `+`
+- `-`
+- `*`
+- `/`
+
+Division `/` always returns `kasr`.
+
+Example:
+
+```
+rakm x = 5 / 2;   // 5 / 2 = 2.5 → truncated to 2
+```
+
+---
+
+### 6.2 Comparison Operators
+
+- `==`
+- `!=`
+- `<`
+- `>`
+- `<=`
+- `>=`
+
+Comparison results:
+
+- `1` if true
+- `0` if false
+
+---
+
+### 6.3 Operator Precedence
+
+From highest to lowest:
+
+1. Parentheses `( )`
+2. `* /`
+3. `+ -`
+4. Comparisons
+
+All arithmetic operators are left-associative.
+
+---
+
+## 7. Built-in Function
+
+### 7.1 Printing
+
+Built-in function:
+
+```
+etba3(expression);
+```
+
+Example:
+
+```
+rakm x = 5;
+etba3(x);
+```
+
+---
+
+## 8. Keywords
+
+Reserved keywords:
+
+- `rakm`
+- `kasr`
+- `ya`
+- `lw`
+- `aw`
+- `tb`
+- `tol`
+- `lma`
+- `return`
+- `etba3`
+
+Identifiers cannot use these names.
+
+---
+
+## 9. Identifiers
+
+Rules:
+
+- Must start with a letter or underscore.
+- Followed by letters, digits, or underscores.
+- Case-sensitive.
+
+Examples:
+
+```
+x
+_sum
+value1
+```
+
+---
+
+## 10. Whitespace
+
+Whitespace is ignored except as separator between tokens.
