@@ -342,7 +342,7 @@ Reserved keywords:
 - `tb`
 - `tol`
 - `lma`
-- `return`
+- `raga3`
 - `etba3`
 
 Identifiers cannot use these names.
