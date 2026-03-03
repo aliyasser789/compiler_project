@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import Enum
 from typing import TypeAlias
@@ -134,6 +133,7 @@ class FuncDef(Node):
     """Function definition at top level."""
 
     name: str
+    return_type: VarType
     params: list[Param]
     body: Block
 

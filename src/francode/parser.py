@@ -58,6 +58,13 @@ class Parser:
         """Return the current token without consuming it."""
         return self.tokens[self.current]
 
+    def peek_ahead(self, offset: int) -> Token:
+        """Return a lookahead token without consuming, clamped at EOF."""
+        index = self.current + offset
+        if index >= len(self.tokens):
+            return self.tokens[-1]
+        return self.tokens[index]
+
     def previous(self) -> Token:
         """Return the previously consumed token."""
         return self.tokens[self.current - 1]
@@ -77,6 +84,12 @@ class Parser:
         if self.is_at_end():
             return False
         return self.peek().type == ttype
+
+    def check_next(self, ttype: TokenType) -> bool:
+        """Return True if the next token matches the requested type."""
+        if self.is_at_end():
+            return False
+        return self.peek_ahead(1).type == ttype
 
     def match(self, *types: TokenType) -> bool:
         """Consume the current token if it matches any provided type."""
@@ -110,12 +123,29 @@ class Parser:
 
     def parse_top_level(self) -> TopLevel:
         """Parse a top-level declaration or statement."""
-        if self.check(TokenType.YA):
-            return self.parse_function_def()
+        if self.check(TokenType.RAKM) or self.check(TokenType.KASR):
+            if self.check_next(TokenType.YA):
+                return self.parse_function_def()
+        elif self.check(TokenType.YA):
+            self.error(
+                self.peek(),
+                "Function definitions must start with a return type ('rakm' or 'kasr') before 'ya'",
+            )
         return self.parse_statement()
 
     def parse_function_def(self) -> FuncDef:
         """Parse a function definition."""
+        if self.match(TokenType.RAKM):
+            return_type = VarType.RAKM
+        elif self.match(TokenType.KASR):
+            return_type = VarType.KASR
+        else:
+            self.error(
+                self.peek(),
+                "Expected return type 'rakm' or 'kasr' before 'ya' in function definition",
+            )
+            raise AssertionError("Unreachable")
+
         self.expect(TokenType.YA, "Expected 'ya' to start function definition")
         name_tok = self.expect(TokenType.IDENT, "Expected function name")
         self.expect(TokenType.LPAREN, "Expected '(' after function name")
@@ -128,7 +158,12 @@ class Parser:
 
         self.expect(TokenType.RPAREN, "Expected ')' after function parameters")
         body = self.parse_block()
-        return FuncDef(name=str(name_tok.value), params=params, body=body)
+        return FuncDef(
+            name=str(name_tok.value),
+            return_type=return_type,
+            params=params,
+            body=body,
+        )
 
     def parse_param(self) -> Param:
         """Parse a typed function parameter."""
