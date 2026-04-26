@@ -1,12 +1,12 @@
-# Codawy Language Specification v0.1
+# Francode Language Specification v0.1
 
 ## 1. Overview
 
-Codawy v0.1 is a custom programming language implemented in Python.
+Francode v0.1 is a custom programming language implemented in Python.
 
-The goal of Codawy is to serve as an educational programming language designed to introduce children and beginners to core programming concepts in a structured and culturally adapted way.
+The goal of Francode is to serve as an educational programming language designed to introduce children and beginners to core programming concepts in a structured and culturally adapted way.
 
-Codawy is designed to teach programming fundamentals clearly and progressively, particularly in an Egyptian educational context, using simplified Arabic-inspired keywords.
+Francode is designed to teach programming fundamentals clearly and progressively, particularly in an Egyptian educational context, using simplified Arabic-inspired keywords.
 
 Version 0.1 focuses on introducing the following core programming concepts:
 
@@ -23,7 +23,7 @@ Advanced features such as arrays, strings, boolean types, classes, and complex d
 
 ## 2. Syntax Style
 
-Codawy follows a C-like syntax structure.
+Francode follows a C-like syntax structure.
 
 ### 2.1 Blocks
 
@@ -75,7 +75,7 @@ Multi-line comment:
 
 ## 3. Data Types
 
-Codawy v0.1 supports two numeric types.
+Francode v0.1 supports two numeric types.
 
 ### 3.1 rakm (Integer)
 
@@ -112,7 +112,7 @@ kasr y = 7.3;
 
 ### 3.4 Implicit Conversions
 
-Codawy allows implicit conversions:
+Francode allows implicit conversions:
 
 - `rakm → kasr` (integer to float) is allowed.
 - `kasr → rakm` (float to integer) is allowed.
@@ -129,7 +129,7 @@ Truncation happens automatically wherever a `rakm` is expected.
 
 ### 3.5 Boolean Semantics
 
-Codawy does not have a boolean type.
+Francode does not have a boolean type.
 
 Instead:
 
@@ -171,9 +171,9 @@ Functions are declared using the keyword `ya`.
 Example:
 
 ```
-ya add(rakm a, rakm b) {
+rakm ya add(rakm a, rakm b) {
     rakm result = a + b;
-    return result;
+    raga3 result;
 }
 ```
 

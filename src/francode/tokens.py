@@ -42,7 +42,6 @@ class TokenType(Enum):
     RBRACE = auto()
     COMMA = auto()
     SEMICOLON = auto()
-
     EOF = auto()
 
 

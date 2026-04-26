@@ -116,10 +116,11 @@ class Parser:
 
     def parse(self) -> Program:
         """Parse tokens into a program AST."""
+        first_tok = self.peek()
         items: list[TopLevel] = []
         while not self.is_at_end():
             items.append(self.parse_top_level())
-        return Program(items=items)
+        return Program(items=items, line=first_tok.line, col=first_tok.col)
 
     def parse_top_level(self) -> TopLevel:
         """Parse a top-level declaration or statement."""
@@ -146,6 +147,7 @@ class Parser:
             )
             raise AssertionError("Unreachable")
 
+        type_tok = self.previous()
         self.expect(TokenType.YA, "Expected 'ya' to start function definition")
         name_tok = self.expect(TokenType.IDENT, "Expected function name")
         self.expect(TokenType.LPAREN, "Expected '(' after function name")
@@ -163,6 +165,8 @@ class Parser:
             return_type=return_type,
             params=params,
             body=body,
+            line=type_tok.line,
+            col=type_tok.col,
         )
 
     def parse_param(self) -> Param:
@@ -175,19 +179,20 @@ class Parser:
             self.error(self.peek(), "Expected parameter type 'rakm' or 'kasr'")
             raise AssertionError("Unreachable")
 
+        type_tok = self.previous()
         ident_tok = self.expect(TokenType.IDENT, "Expected parameter name")
-        return Param(name=str(ident_tok.value), var_type=var_type)
+        return Param(name=str(ident_tok.value), var_type=var_type, line=type_tok.line, col=type_tok.col)
 
     def parse_block(self) -> Block:
         """Parse a block statement."""
-        self.expect(TokenType.LBRACE, "Expected '{' to start block")
+        lbrace_tok = self.expect(TokenType.LBRACE, "Expected '{' to start block")
         statements: list[Stmt] = []
         while not self.check(TokenType.RBRACE):
             if self.is_at_end():
                 self.error(self.peek(), "Unterminated block; expected '}'")
             statements.append(self.parse_statement())
         self.expect(TokenType.RBRACE, "Expected '}' to end block")
-        return Block(statements=statements)
+        return Block(statements=statements, line=lbrace_tok.line, col=lbrace_tok.col)
 
     def parse_statement(self) -> Stmt:
         """Parse a statement."""
@@ -219,11 +224,18 @@ class Parser:
             self.error(self.peek(), "Expected variable type 'rakm' or 'kasr'")
             raise AssertionError("Unreachable")
 
+        type_tok = self.previous()
         name_tok = self.expect(TokenType.IDENT, "Expected variable name")
         self.expect(TokenType.EQUAL, "Expected '=' after variable name")
         initializer = self.parse_expression()
         self.expect(TokenType.SEMICOLON, "Expected ';' after variable declaration")
-        return VarDecl(var_type=var_type, name=str(name_tok.value), initializer=initializer)
+        return VarDecl(
+            var_type=var_type,
+            name=str(name_tok.value),
+            initializer=initializer,
+            line=type_tok.line,
+            col=type_tok.col,
+        )
 
     def parse_assignment(self) -> Assign:
         """Parse an assignment statement."""
@@ -231,29 +243,29 @@ class Parser:
         self.expect(TokenType.EQUAL, "Expected '=' in assignment")
         value = self.parse_expression()
         self.expect(TokenType.SEMICOLON, "Expected ';' after assignment")
-        return Assign(name=str(name_tok.value), value=value)
+        return Assign(name=str(name_tok.value), value=value, line=name_tok.line, col=name_tok.col)
 
     def parse_print_stmt(self) -> PrintStmt:
         """Parse a print statement."""
-        self.expect(TokenType.ETBA3, "Expected 'etba3' to start print statement")
+        etba3_tok = self.expect(TokenType.ETBA3, "Expected 'etba3' to start print statement")
         self.expect(TokenType.LPAREN, "Expected '(' after 'etba3'")
         value = self.parse_expression()
         self.expect(TokenType.RPAREN, "Expected ')' after print expression")
         self.expect(TokenType.SEMICOLON, "Expected ';' after print statement")
-        return PrintStmt(value=value)
+        return PrintStmt(value=value, line=etba3_tok.line, col=etba3_tok.col)
 
     def parse_return_stmt(self) -> ReturnStmt:
         """Parse a return statement."""
-        self.expect(TokenType.RAGA3, "Expected 'raga3' to start return statement")
+        raga3_tok = self.expect(TokenType.RAGA3, "Expected 'raga3' to start return statement")
         value: Expr | None = None
         if not self.check(TokenType.SEMICOLON):
             value = self.parse_expression()
         self.expect(TokenType.SEMICOLON, "Expected ';' after return statement")
-        return ReturnStmt(value=value)
+        return ReturnStmt(value=value, line=raga3_tok.line, col=raga3_tok.col)
 
     def parse_if_stmt(self) -> IfStmt:
         """Parse an if statement with optional elif and else branches."""
-        self.expect(TokenType.LW, "Expected 'lw' to start if statement")
+        lw_tok = self.expect(TokenType.LW, "Expected 'lw' to start if statement")
         self.expect(TokenType.LPAREN, "Expected '(' after 'lw'")
         condition = self.parse_expression()
         self.expect(TokenType.RPAREN, "Expected ')' after if condition")
@@ -277,17 +289,19 @@ class Parser:
             then_block=then_block,
             elif_parts=elif_parts,
             else_block=else_block,
+            line=lw_tok.line,
+            col=lw_tok.col,
         )
 
     def parse_while_stmt(self) -> WhileStmt:
         """Parse a while statement."""
-        self.expect(TokenType.TOL, "Expected 'tol' to start while statement")
+        tol_tok = self.expect(TokenType.TOL, "Expected 'tol' to start while statement")
         self.expect(TokenType.LMA, "Expected 'lma' after 'tol'")
         self.expect(TokenType.LPAREN, "Expected '(' after 'tol lma'")
         condition = self.parse_expression()
         self.expect(TokenType.RPAREN, "Expected ')' after while condition")
         body = self.parse_block()
-        return WhileStmt(condition=condition, body=body)
+        return WhileStmt(condition=condition, body=body, line=tol_tok.line, col=tol_tok.col)
 
     def parse_expression(self) -> Expr:
         """Parse an expression."""
@@ -306,7 +320,13 @@ class Parser:
         ):
             op_tok = self.previous()
             right = self.parse_term()
-            left = BinaryOp(op=self._token_to_operator(op_tok.type), left=left, right=right)
+            left = BinaryOp(
+                op=self._token_to_operator(op_tok.type),
+                left=left,
+                right=right,
+                line=op_tok.line,
+                col=op_tok.col,
+            )
         return left
 
     def parse_term(self) -> Expr:
@@ -315,7 +335,13 @@ class Parser:
         while self.match(TokenType.PLUS, TokenType.MINUS):
             op_tok = self.previous()
             right = self.parse_factor()
-            left = BinaryOp(op=self._token_to_operator(op_tok.type), left=left, right=right)
+            left = BinaryOp(
+                op=self._token_to_operator(op_tok.type),
+                left=left,
+                right=right,
+                line=op_tok.line,
+                col=op_tok.col,
+            )
         return left
 
     def parse_factor(self) -> Expr:
@@ -324,14 +350,27 @@ class Parser:
         while self.match(TokenType.STAR, TokenType.SLASH):
             op_tok = self.previous()
             right = self.parse_unary()
-            left = BinaryOp(op=self._token_to_operator(op_tok.type), left=left, right=right)
+            left = BinaryOp(
+                op=self._token_to_operator(op_tok.type),
+                left=left,
+                right=right,
+                line=op_tok.line,
+                col=op_tok.col,
+            )
         return left
 
     def parse_unary(self) -> Expr:
         """Parse unary expressions."""
         if self.match(TokenType.MINUS):
+            minus_tok = self.previous()
             right = self.parse_unary()
-            return BinaryOp(op="-", left=IntLiteral(0), right=right)
+            return BinaryOp(
+                op="-",
+                left=IntLiteral(value=0, line=minus_tok.line, col=minus_tok.col),
+                right=right,
+                line=minus_tok.line,
+                col=minus_tok.col,
+            )
         return self.parse_call_or_primary()
 
     def parse_call_or_primary(self) -> Expr:
@@ -344,17 +383,20 @@ class Parser:
                 while self.match(TokenType.COMMA):
                     args.append(self.parse_expression())
             self.expect(TokenType.RPAREN, "Expected ')' after arguments")
-            return CallExpr(callee=expr.name, args=args)
+            return CallExpr(callee=expr.name, args=args, line=expr.line, col=expr.col)
         return expr
 
     def parse_primary(self) -> Expr:
         """Parse primary expressions."""
         if self.match(TokenType.INT):
-            return IntLiteral(value=int(self.previous().value))
+            tok = self.previous()
+            return IntLiteral(value=int(tok.value), line=tok.line, col=tok.col)
         if self.match(TokenType.FLOAT):
-            return FloatLiteral(value=float(self.previous().value))
+            tok = self.previous()
+            return FloatLiteral(value=float(tok.value), line=tok.line, col=tok.col)
         if self.match(TokenType.IDENT):
-            return VarRef(name=str(self.previous().value))
+            tok = self.previous()
+            return VarRef(name=str(tok.value), line=tok.line, col=tok.col)
         if self.match(TokenType.LPAREN):
             expr = self.parse_expression()
             self.expect(TokenType.RPAREN, "Expected ')' after expression")
@@ -382,4 +424,3 @@ class Parser:
 
 
 __all__ = ["Parser", "ParserError"]
-

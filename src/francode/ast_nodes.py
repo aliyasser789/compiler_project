@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import TypeAlias
 
@@ -7,6 +7,9 @@ from typing import TypeAlias
 @dataclass(slots=True)
 class Node:
     """Base class for all AST nodes."""
+
+    line: int = field(default=0, kw_only=True)
+    col: int = field(default=0, kw_only=True)
 
 
 @dataclass(slots=True)

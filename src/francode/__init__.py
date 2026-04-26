@@ -1,3 +1,3 @@
-from francode.tokens import LexerError, Token, TokenType
+from .tokens import LexerError, Token, TokenType
 
 __all__ = ["LexerError", "Token", "TokenType"]

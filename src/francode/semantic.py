@@ -12,6 +12,7 @@ from francode.ast_nodes import (
     FuncDef,
     IfStmt,
     IntLiteral,
+    Node,
     PrintStmt,
     Program,
     ReturnStmt,
@@ -65,13 +66,14 @@ class SemanticAnalyzer:
                 continue
 
             if item.name in self.functions:
-                self._error(f"Duplicate function declaration '{item.name}'")
+                self._error(f"Duplicate function declaration '{item.name}'", item)
 
             seen_params: set[str] = set()
             for param in item.params:
                 if param.name in seen_params:
                     self._error(
-                        f"Duplicate parameter name '{param.name}' in function '{item.name}'"
+                        f"Duplicate parameter name '{param.name}' in function '{item.name}'",
+                        param,
                     )
                 seen_params.add(param.name)
 
@@ -98,13 +100,15 @@ class SemanticAnalyzer:
             scope = self._current_scope()
             if stmt.name in scope:
                 self._error(
-                    f"Redeclaration of variable '{stmt.name}' in the same scope"
+                    f"Redeclaration of variable '{stmt.name}' in the same scope",
+                    stmt,
                 )
             init_type = self.infer_expr_type(stmt.initializer)
             if not self._is_convertible(init_type, stmt.var_type):
                 self._error(
                     f"Cannot initialize variable '{stmt.name}' of type {stmt.var_type.name} "
-                    f"with expression of type {init_type.name}"
+                    f"with expression of type {init_type.name}",
+                    stmt,
                 )
             scope[stmt.name] = stmt.var_type
             return
@@ -112,12 +116,13 @@ class SemanticAnalyzer:
         if isinstance(stmt, Assign):
             target_type = self._lookup_var(stmt.name)
             if target_type is None:
-                self._error(f"Assignment to undeclared variable '{stmt.name}'")
+                self._error(f"Assignment to undeclared variable '{stmt.name}'", stmt)
             value_type = self.infer_expr_type(stmt.value)
             if not self._is_convertible(value_type, target_type):
                 self._error(
                     f"Cannot assign expression of type {value_type.name} "
-                    f"to variable '{stmt.name}' of type {target_type.name}"
+                    f"to variable '{stmt.name}' of type {target_type.name}",
+                    stmt,
                 )
             return
 
@@ -127,14 +132,15 @@ class SemanticAnalyzer:
 
         if isinstance(stmt, ReturnStmt):
             if self.current_function is None:
-                self._error("'raga3' is only allowed inside a function")
+                self._error("'raga3' is only allowed inside a function", stmt)
             if stmt.value is None:
-                self._error("'raga3' requires a return expression in Codawy v0.1")
+                self._error("'raga3' requires a return expression in Codawy v0.1", stmt)
             value_type = self.infer_expr_type(stmt.value)
             if not self._is_convertible(value_type, self.current_function.return_type):
                 self._error(
                     f"Return type mismatch in function '{self.current_function.name}': "
-                    f"expected {self.current_function.return_type.name}, got {value_type.name}"
+                    f"expected {self.current_function.return_type.name}, got {value_type.name}",
+                    stmt,
                 )
             return
 
@@ -157,7 +163,7 @@ class SemanticAnalyzer:
             self._check_block(stmt)
             return
 
-        self._error(f"Unsupported statement node: {type(stmt).__name__}")
+        self._error(f"Unsupported statement node: {type(stmt).__name__}", stmt)
 
     def infer_expr_type(self, expr: Expr) -> VarType:
         """Infer and validate the resulting type of an expression."""
@@ -170,18 +176,19 @@ class SemanticAnalyzer:
         if isinstance(expr, VarRef):
             var_type = self._lookup_var(expr.name)
             if var_type is None:
-                self._error(f"Use of undeclared variable '{expr.name}'")
+                self._error(f"Use of undeclared variable '{expr.name}'", expr)
             return var_type
 
         if isinstance(expr, CallExpr):
             symbol = self.functions.get(expr.callee)
             if symbol is None:
-                self._error(f"Call to undefined function '{expr.callee}'")
+                self._error(f"Call to undefined function '{expr.callee}'", expr)
 
             if len(expr.args) != len(symbol.param_types):
                 self._error(
                     f"Function '{expr.callee}' expects {len(symbol.param_types)} argument(s), "
-                    f"got {len(expr.args)}"
+                    f"got {len(expr.args)}",
+                    expr,
                 )
 
             for idx, (arg_expr, param_type) in enumerate(
@@ -191,7 +198,8 @@ class SemanticAnalyzer:
                 if not self._is_convertible(arg_type, param_type):
                     self._error(
                         f"Argument {idx} for function '{expr.callee}' has type "
-                        f"{arg_type.name}, expected {param_type.name}"
+                        f"{arg_type.name}, expected {param_type.name}",
+                        arg_expr,
                     )
 
             return symbol.return_type
@@ -211,9 +219,9 @@ class SemanticAnalyzer:
                     return VarType.KASR
                 return VarType.RAKM
 
-            self._error(f"Unsupported binary operator '{expr.op}'")
+            self._error(f"Unsupported binary operator '{expr.op}'", expr)
 
-        self._error(f"Unsupported expression node: {type(expr).__name__}")
+        self._error(f"Unsupported expression node: {type(expr).__name__}", expr)
 
     def check_condition(self, expr: Expr) -> None:
         """Enforce Codawy v0.1 condition form restrictions."""
@@ -235,7 +243,8 @@ class SemanticAnalyzer:
 
         self._error(
             "Condition must be IntLiteral(0/1) or a comparison expression "
-            "(==, !=, <, >, <=, >=)"
+            "(==, !=, <, >, <=, >=)",
+            expr,
         )
 
     def _check_function(self, func: FuncDef) -> None:
@@ -251,14 +260,16 @@ class SemanticAnalyzer:
                 if param.name in scope:
                     # Defensive check; pass1 already validates this.
                     self._error(
-                        f"Duplicate parameter name '{param.name}' in function '{func.name}'"
+                        f"Duplicate parameter name '{param.name}' in function '{func.name}'",
+                        param,
                     )
                 scope[param.name] = param.var_type
 
             self._check_block(func.body)
             if not self._contains_return(func.body):
                 self._error(
-                    f"Function '{func.name}' must contain at least one 'raga3' statement"
+                    f"Function '{func.name}' must contain at least one 'raga3' statement",
+                    func,
                 )
         finally:
             self._pop_scope()
@@ -321,9 +332,11 @@ class SemanticAnalyzer:
             self._error("Internal semantic analyzer error: no active scope")
         return self.scopes[-1]
 
-    def _error(self, message: str) -> None:
-        """Raise a semantic error using default source location."""
-        raise SemanticError(message, 1, 1)
+    def _error(self, message: str, node: Node | None = None) -> None:
+        """Raise a semantic error, using the node's source location when available."""
+        if node is not None:
+            raise SemanticError(message, node.line, node.col)
+        raise SemanticError(message, 0, 0)
 
 
 # Example semantic errors:
