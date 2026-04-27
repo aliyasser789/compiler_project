@@ -1,0 +1,33 @@
+// conditionals.fc
+// Demonstrates: lw (if), tb lw (else-if), aw (else).
+// Runs three separate if-chains to exercise all three branch types.
+
+// --- Chain 1: the lw branch fires (n = 15) ---
+rakm n = 15;
+lw (n > 10) {
+    etba3(1);
+} tb lw (n > 5) {
+    etba3(2);
+} aw {
+    etba3(3);
+}
+
+// --- Chain 2: the tb lw branch fires (n = 7) ---
+n = 7;
+lw (n > 10) {
+    etba3(1);
+} tb lw (n > 5) {
+    etba3(2);
+} aw {
+    etba3(3);
+}
+
+// --- Chain 3: the aw branch fires (n = 2) ---
+n = 2;
+lw (n > 10) {
+    etba3(1);
+} tb lw (n > 5) {
+    etba3(2);
+} aw {
+    etba3(3);
+}

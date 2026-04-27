@@ -1,0 +1,16 @@
+// fibonacci.fc
+// Demonstrates: recursive function calls, base-case branching with lw / aw.
+// fib(0)=0, fib(1)=1, fib(7)=13.
+
+rakm ya fib(rakm n) {
+    lw (n < 2) {
+        raga3 n;
+    } aw {
+        raga3 fib(n - 1) + fib(n - 2);
+    }
+}
+
+etba3(fib(0));
+etba3(fib(1));
+etba3(fib(5));
+etba3(fib(7));

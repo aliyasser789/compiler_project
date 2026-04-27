@@ -1,0 +1,8 @@
+// loop.fc
+// Demonstrates: tol lma (while loop) counting from 1 to 5 and printing each value.
+
+rakm i = 1;
+tol lma (i <= 5) {
+    etba3(i);
+    i = i + 1;
+}

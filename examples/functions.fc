@@ -1,0 +1,30 @@
+// functions.fc
+// Demonstrates: rakm ya / kasr ya function definitions, parameters, raga3, and calling.
+
+// Integer function: returns a + b.
+rakm ya add(rakm a, rakm b) {
+    raga3 a + b;
+}
+
+// Float function: returns the average of two integers as a float.
+kasr ya average(rakm x, rakm y) {
+    raga3 (x + y) / 2;
+}
+
+// Integer function: returns the larger of two values.
+rakm ya max(rakm p, rakm q) {
+    lw (p > q) {
+        raga3 p;
+    } aw {
+        raga3 q;
+    }
+}
+
+rakm s = add(4, 6);
+etba3(s);
+
+kasr avg = average(7, 3);
+etba3(avg);
+
+rakm bigger = max(9, 4);
+etba3(bigger);

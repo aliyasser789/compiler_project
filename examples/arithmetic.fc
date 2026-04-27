@@ -1,0 +1,23 @@
+// arithmetic.fc
+// Demonstrates: +, -, *, / with both rakm and kasr results.
+// Division always returns kasr (float), even when operands are rakm.
+
+rakm a = 10;
+rakm b = 3;
+
+rakm sum = a + b;
+etba3(sum);
+
+rakm diff = a - b;
+etba3(diff);
+
+rakm prod = a * b;
+etba3(prod);
+
+kasr quot = a / b;
+etba3(quot);
+
+// Mixed-type arithmetic: int + float yields float.
+kasr mixed = a + 0;
+mixed = mixed + 1;
+etba3(mixed);
