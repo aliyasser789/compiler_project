@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Francode Playground</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Toolbar ── */
+    #toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      background: #252526;
+      border-bottom: 1px solid #3e3e42;
+      flex-shrink: 0;
+    }
+
+    #toolbar h1 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #cccccc;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+      margin-right: 4px;
+    }
+
+    #examples-select {
+      background: #3c3c3c;
+      color: #cccccc;
+      border: 1px solid #4e4e4e;
+      border-radius: 3px;
+      padding: 4px 8px;
+      font-size: 13px;
+      cursor: pointer;
+      outline: none;
+      max-width: 180px;
+    }
+    #examples-select:hover { border-color: #007acc; }
+    #examples-select:focus { border-color: #007acc; }
+
+    #run-btn {
+      background: #0e639c;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      padding: 5px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+    }
+    #run-btn:hover:not(:disabled) { background: #1177bb; }
+    #run-btn:active:not(:disabled) { background: #0d5a8e; }
+    #run-btn:disabled { background: #4e4e4e; cursor: not-allowed; opacity: 0.7; }
+
+    #clear-btn {
+      background: transparent;
+      color: #cccccc;
+      border: 1px solid #555;
+      border-radius: 3px;
+      padding: 5px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+    }
+    #clear-btn:hover  { border-color: #999; color: #fff; }
+    #clear-btn:active { border-color: #ccc; }
+
+    #kbd-hint {
+      font-size: 11px;
+      color: #666;
+      white-space: nowrap;
+      margin-left: 2px;
+    }
+
+    /* ── Split pane ── */
+    #main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .pane + .pane { border-left: 1px solid #3e3e42; }
+
+    .pane-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #858585;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 5px 14px;
+      background: #252526;
+      border-bottom: 1px solid #3e3e42;
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    /* ── Editor textarea ── */
+    #editor {
+      flex: 1;
+      width: 100%;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      border: none;
+      outline: none;
+      resize: none;
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.65;
+      padding: 14px 16px;
+      tab-size: 4;
+      white-space: pre;
+      overflow-wrap: normal;
+      overflow: auto;
+      caret-color: #aeafad;
+    }
+    #editor::placeholder { color: #555; font-style: italic; }
+    #editor::selection   { background: #264f78; }
+
+    /* ── Output panel ── */
+    #output {
+      flex: 1;
+      padding: 14px 16px;
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow: auto;
+    }
+    #output.idle    { color: #555; font-style: italic; }
+    #output.running { color: #858585; font-style: italic; }
+    #output.success { color: #23d18b; }
+    #output.error   { color: #f14c4c; }
+
+    /* ── Status bar ── */
+    #status-bar {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 3px 14px;
+      font-size: 12px;
+      color: #fff;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    #status-bar.idle    { background: #007acc; }
+    #status-bar.running { background: #5a5a5a; }
+    #status-bar.success { background: #16825d; }
+    #status-bar.error   { background: #c72e0f; }
+  </style>
+</head>
+<body>
+
+<div id="toolbar">
+  <h1>Francode Playground</h1>
+  <select id="examples-select">
+    <option value="">— Load example —</option>
+  </select>
+  <button id="run-btn">&#9654; Run</button>
+  <button id="clear-btn">&#10005; Clear</button>
+  <span id="kbd-hint">Ctrl+Enter</span>
+</div>
+
+<div id="main">
+  <div class="pane">
+    <div class="pane-label">Editor</div>
+    <textarea
+      id="editor"
+      spellcheck="false"
+      autocorrect="off"
+      autocapitalize="off"
+      autocomplete="off"
+      placeholder="Write Francode here…"
+    ></textarea>
+  </div>
+
+  <div class="pane">
+    <div class="pane-label">Output</div>
+    <pre id="output" class="idle">Output will appear here after you click ▶ Run.</pre>
+  </div>
+</div>
+
+<div id="status-bar" class="idle">
+  <span id="status-icon">●</span>
+  <span id="status-text">Ready</span>
+</div>
+
+<script>
+  // Change this if your backend runs on a different port
+  const API = 'http://localhost:8000';
+
+  const editor         = document.getElementById('editor');
+  const output         = document.getElementById('output');
+  const runBtn         = document.getElementById('run-btn');
+  const clearBtn       = document.getElementById('clear-btn');
+  const examplesSelect = document.getElementById('examples-select');
+  const statusBar      = document.getElementById('status-bar');
+  const statusIcon     = document.getElementById('status-icon');
+  const statusText     = document.getElementById('status-text');
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  function setStatus(state, text) {
+    statusBar.className = state;
+    statusIcon.textContent =
+      state === 'success' ? '✔' :
+      state === 'error'   ? '✖' :
+      state === 'running' ? '…' : '●';
+    statusText.textContent = text;
+  }
+
+  function setOutput(state, text) {
+    output.className   = state;
+    output.textContent = text;
+  }
+
+  // ── Load examples from backend on page load ───────────────────────────────
+
+  async function loadExamples() {
+    try {
+      const res = await fetch(`${API}/examples`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const examples = await res.json();
+      // examples is { name: source, … } already sorted by the backend
+      for (const [name, source] of Object.entries(examples)) {
+        const opt = document.createElement('option');
+        opt.value       = source;
+        opt.textContent = name;
+        examplesSelect.appendChild(opt);
+      }
+    } catch (err) {
+      // Backend might not be running yet — add a disabled hint
+      const opt = document.createElement('option');
+      opt.disabled     = true;
+      opt.textContent  = '(start the server to load examples)';
+      examplesSelect.appendChild(opt);
+      console.warn('Could not reach backend for examples:', err.message);
+    }
+  }
+
+  // ── Example selection ─────────────────────────────────────────────────────
+
+  examplesSelect.addEventListener('change', () => {
+    const source = examplesSelect.value;
+    if (source) {
+      editor.value = source;
+      editor.focus();
+      // Selection stays visible in the dropdown — no reset here
+    }
+  });
+
+  // ── Editor keyboard shortcuts ─────────────────────────────────────────────
+
+  editor.addEventListener('keydown', (e) => {
+    // Tab → insert 4 spaces instead of moving focus
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const s = editor.selectionStart;
+      const end = editor.selectionEnd;
+      editor.value = editor.value.slice(0, s) + '    ' + editor.value.slice(end);
+      editor.selectionStart = editor.selectionEnd = s + 4;
+      return;
+    }
+    // Ctrl/Cmd+Enter → run
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      runBtn.click();
+    }
+  });
+
+  // ── Clear ─────────────────────────────────────────────────────────────────
+
+  clearBtn.addEventListener('click', () => {
+    editor.value = '';
+    setOutput('idle', 'Output will appear here after you click ▶ Run.');
+    examplesSelect.value = '';
+    setStatus('idle', 'Ready');
+    editor.focus();
+  });
+
+  // ── Run ───────────────────────────────────────────────────────────────────
+
+  runBtn.addEventListener('click', async () => {
+    const source = editor.value;
+    if (!source.trim()) {
+      setStatus('idle', 'Nothing to run — write some Francode first.');
+      return;
+    }
+
+    runBtn.disabled = true;
+    setStatus('running', 'Running…');
+    setOutput('running', 'Running…');
+
+    try {
+      const res = await fetch(`${API}/run`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ source }),
+      });
+
+      if (!res.ok) throw new Error(`Server returned HTTP ${res.status}`);
+
+      const data = await res.json();
+
+      if (data.success) {
+        setOutput('success', data.output.length > 0 ? data.output : '(program produced no output)');
+        setStatus('success', 'Ran successfully');
+      } else {
+        // Build a clear error message with location if available
+        let msg = '';
+        if (data.line != null && data.col != null) {
+          msg += `Line ${data.line}, Col ${data.col}: `;
+        }
+        msg += data.error ?? 'Unknown error';
+
+        // If there was partial output before the error, show it below
+        if (data.output && data.output.trim()) {
+          msg += '\n\n─── Partial output before error ───\n' + data.output;
+        }
+
+        setOutput('error', msg);
+        setStatus(
+          'error',
+          data.line != null ? `Error at line ${data.line}, col ${data.col}` : 'Error'
+        );
+      }
+    } catch (err) {
+      setOutput(
+        'error',
+        `Could not reach the backend: ${err.message}\n\n` +
+        `Make sure the server is running:\n\n` +
+        `  uvicorn playground.backend.main:app --reload\n\n` +
+        `(run this from the project root directory)`
+      );
+      setStatus('error', 'Connection failed');
+    } finally {
+      runBtn.disabled = false;
+    }
+  });
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+
+  loadExamples();
+</script>
+</body>
+</html>
